@@ -1,0 +1,7 @@
+[default.tls]
+key = "./keys/key.pem"     # Path or bytes to DER-encoded ASN.1 PKCS#1/#8 or SEC1 key.
+certs = "./keys/cert.pem" # Path or bytes to DER-encoded X.509 TLS cert chain.
+
+[default]
+address = "0.0.0.0"
+log_level = "critical"

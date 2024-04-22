@@ -6,6 +6,11 @@ use std::sync::OnceLock;
 
 #[macro_use] extern crate rocket;
 use rocket::response::content::RawHtml;
+use rocket::config::{Config};
+// use rocket::tls::{TlsConfig, CipherSuite};x
+// use rocket::tls::TlsConfig;
+
+use mouse_rs::{Mouse};
 
 extern crate tauri;
 
@@ -13,6 +18,7 @@ use tauri::Window;
 use crate::tauri::Manager;
 
 use std::thread;
+use std::fs;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -24,9 +30,20 @@ fn greet(name: &str) -> String {
 
 #[derive(Responder)]
 #[response(status = 200, content_type = "html")]
-struct ClientHTML(&'static [u8]);
+struct ClientHTML_Static(&'static [u8]);
 
 static CLIENTHTML: &'static [u8] = include_bytes!("./bmm-client/index.html");
+
+#[derive(Responder)]
+#[response(status = 200, content_type = "html")]
+struct ClientHTML(String);
+
+
+// static mut v_x: f64 = 0.0;
+// static mut v_y: f64 = 0.0;
+
+// static mut x: f64 = 0.0;
+// static mut y: f64 = 0.0;
 
 
 static WINDOW: OnceLock<Window> = OnceLock::new();
@@ -39,28 +56,61 @@ async fn main() {
             let window = app.get_window("main").unwrap();
             
             _ = WINDOW.set(window);
-            
             // get / return rawHtml file in ./bmm-client/index.html
             #[get("/")]
             fn index() ->  ClientHTML {
-                ClientHTML(CLIENTHTML)
+                // read index.html to a string
+                use std::env;
+
+                // We assume that we are in a valid directory.
+                // let path = env::current_dir().unwrap();
+                // println!("The current directory is {}", path.display());
+
+                ClientHTML(fs::read_to_string("./src/bmm-client/index.html").unwrap())
             }
 
             //TODO migrate to websockets
-            #[get("/data/<data>")]
-            fn acceleration(data: String) {
-                // parse x;y
-                let mut data = data.split(";");
-                let x = data.next().unwrap().parse::<f64>().unwrap();
-                let y = data.next().unwrap().parse::<f64>().unwrap();
+            #[get("/data/<v_x>/<v_y>")]
+            fn acceleration(v_x: f64, v_y: f64) {
+
 
                 // print out data
-                println!("x: {}, y: {}", x, y);
+                // println!("x: {}, y: {}", a_x, a_y);
+
+                // unsafe {
+                //     println!("vx: {}, vy: {}", v_x, v_y);
+                //     v_x += x;
+                //     v_y += y;
+                // }
+
+                let mut mouse = Mouse::new();
+                let pos = mouse.get_position().unwrap();
+
+                // floor accell data
+                // let move_x = x.floor() as i32 + pos.x;
+                // let move_y = y.floor() as i32 + pos.y;
+
+                // move mouse by amount
+                unsafe{
+                    mouse.move_to(pos.x + v_x as i32, pos.y + v_y as i32);
+                }
+
+
             }
 
             // mount the rocket instance
             tauri::async_runtime::spawn(async move {
-                let _rocket = rocket::build().mount("/", routes![index]).launch().await;
+                // config with tls certs
+
+                // let tls = TlsConfig::from_paths(
+                //     "./keys/cert.pem",
+                //     "./keys/key.pem"
+
+
+                let _rocket = rocket::build()
+                    .mount("/", routes![index, acceleration])
+                    .launch()
+                    .await;
             });
             Ok(())
         })

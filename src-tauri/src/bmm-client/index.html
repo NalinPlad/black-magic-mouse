@@ -6,6 +6,65 @@
     <title>BMM Client</title>
 </head>
 <body>
-    Hello
+    Hello, this is the BMM client. Make sure you enable all the permissions
+    <button id="request-permission">Request Permission</button>
+    <p id="acc-out">7</p>
+    <script>
+        
+        const accOut = document.getElementById('acc-out');
+
+        let good = false;
+
+
+        let v_x = 0;
+        let v_y = 0;
+
+        const max_idle_frames = 5;
+        let idle_frames = 0;
+
+
+        function handleAccelData(acceleration) {
+            console.log(acceleration);
+            if(Math.abs(acceleration.accelerationIncludingGravity.z) > 9.5){
+                good = true;
+                accOut.innerHTML = "Good"
+                v_x -= acceleration.acceleration.x;
+                v_y += acceleration.acceleration.y;
+
+                if (Math.abs(acceleration.acceleration.x) < 0.05 || Math.abs(acceleration.acceleration.y) < 0.05) {
+                    idle_frames++;
+                    if (idle_frames > max_idle_frames) {
+                        v_x = 0;
+                        v_y = 0;
+                    }
+                } else {
+                    idle_frames = 0;
+                }
+                const report = fetch(`/data/${v_x}/${v_y}`);
+            } else {
+                good = false;
+                accOut.innerHTML = "Put you phone on a flat surface."
+            }
+            // accOut.innerHTML = `
+            //     <p>Acceleration X: ${acceleration.accelerationIncludingGravity.x}</p>
+            //     <p>Acceleration Y: ${acceleration.accelerationIncludingGravity.y}</p>
+            //     <p>Acceleration Z: ${acceleration.accelerationIncludingGravity.z}</p>
+            // `;
+        }
+
+        // request permission to use the accelerometer
+        const requestPermission = document.getElementById('request-permission');
+        requestPermission.addEventListener('click', async () => {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    window.addEventListener('devicemotion', (event) => {
+                        handleAccelData(event);
+                    });
+                }
+            }
+        });
+
+    </script>
 </body>
 </html>
