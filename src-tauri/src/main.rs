@@ -26,6 +26,12 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// #[tauri::command]
+// fn get_local_ip() -> String {
+//     let local_ip = get_local_ip::get_local_ip().unwrap();
+//     local_ip.to_string()
+// }
+
 
 
 #[derive(Responder)]

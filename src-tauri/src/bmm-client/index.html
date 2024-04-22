@@ -40,7 +40,10 @@
                 } else {
                     idle_frames = 0;
                 }
-                const report = fetch(`/data/${v_x}/${v_y}`);
+
+                if(v_x != 0 && v_y != 0){
+                    const report = fetch(`/data/${v_x}/${v_y}`);
+                }
             } else {
                 good = false;
                 accOut.innerHTML = "Put you phone on a flat surface."
