@@ -1,16 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BMM Client</title>
 </head>
+
 <body>
     Hello, this is the BMM client. Make sure you enable all the permissions
-    <button id="request-permission">Request Permission</button>
-    <p id="acc-out">7</p>
+    <button id="request-permission">Start</button>
+    <p id="acc-out">Click the button to request permissions and begin polling</p>
+    <div>
+        <button id="left-c" class="click">LEFT CLICK</button>
+        <button id="right-c" class="click">RIGHT CLICK</button>
+    </div>
+    <style>
+        button {
+            padding: 10px;
+            margin: 10px;
+            font-size: 20px;
+        }
+
+        .click {
+            height: 100px;
+        }
+    </style>
     <script>
-        
+        const leftC = document.getElementById('left-c');
+        const rightC = document.getElementById('right-c');
+
+        leftC.addEventListener('click', () => {
+            fetch('/click/left');
+        });
+
+        rightC.addEventListener('click', () => {
+            fetch('/click/right');
+        });
+    </script>
+    <script>
+
         const accOut = document.getElementById('acc-out');
 
         let good = false;
@@ -22,32 +51,88 @@
         const max_idle_frames = 5;
         let idle_frames = 0;
 
+        // false =  positive
+        // true = negative
+        let par_x = false;
+        let par_y = false;
+
+        let idle = true;
+
+        // const lerp = (a, b, t) => a + (b - a) * t
+
+        // const smoothed_v_x = 0
+        // const smoothed_v_y = 0
+
 
         function handleAccelData(acceleration) {
             console.log(acceleration);
-            if(Math.abs(acceleration.accelerationIncludingGravity.z) > 9.5){
+            // if (Math.abs(acceleration.accelerationIncludingGravity.z) > 9.5) {
                 good = true;
-                accOut.innerHTML = "Good"
-                v_x -= acceleration.acceleration.x;
-                v_y += acceleration.acceleration.y;
+                accOut.innerHTML = `Good. ${idle ? "Idle" : ""} x parity: ${par_x ? "negative" : "positive"} y parity: ${par_y ? "negative" : "positive"}`
 
-                if (Math.abs(acceleration.acceleration.x) < 0.05 || Math.abs(acceleration.acceleration.y) < 0.05) {
+                if(Math.abs(acceleration.acceleration.x) > 0.02) { v_x -= acceleration.acceleration.x }
+                if(Math.abs(acceleration.acceleration.y) > 0.02) { v_y += acceleration.acceleration.y }
+
+                if(idle){
+                    // background color light green
+                    document.body.style.backgroundColor = "#90EE90";
+                } else {
+                    // background color light yellow
+                    document.body.style.backgroundColor = "#FFFFE0";
+                }
+
+                // v_x -= acceleration.acceleration.x
+                // v_y -= acceleration.acceleration.y
+
+                if ((Math.abs(acceleration.acceleration.x) < 0.05 || Math.abs(acceleration.acceleration.y) < 0.05)) {
                     idle_frames++;
                     if (idle_frames > max_idle_frames) {
                         v_x = 0;
                         v_y = 0;
+                        idle = true;
                     }
                 } else {
                     idle_frames = 0;
+                    
+                    // set x and y parity variables based on which directions they are going
+                    if(idle) {
+                        if (acceleration.acceleration.x > 0) {
+                            par_x = false;
+                        } else {
+                            par_x = true;
+                        }
+    
+                        if (acceleration.acceleration.y > 0) {
+                            par_y = false;
+                        } else {
+                            par_y = true;
+                        }
+                    }
+
+                    idle = false;
                 }
 
-                if(v_x != 0 && v_y != 0){
+
+
+                // if the parity of the acceleration changes, reset the velocity
+                // if (par_x != (acceleration.acceleration.x > 0)) {
+                //     v_x = 0;
+                // }
+
+                // if (par_y != (acceleration.acceleration.y > 0)) {
+                //     v_y = 0;
+                // }
+
+                // smoothed_v_x = lerp(smoothed_v_x, v_x, 0.1)
+                // smoothed_v_y = lerp(smoothed_v_y, v_y, 0.1)
+
+                if (v_x != 0 && v_y != 0) {
                     const report = fetch(`/data/${v_x}/${v_y}`);
                 }
-            } else {
-                good = false;
-                accOut.innerHTML = "Put you phone on a flat surface."
-            }
+            // } else {
+            //     good = false;
+            //     accOut.innerHTML = "Put you phone on a flat surface."
+            // }
             // accOut.innerHTML = `
             //     <p>Acceleration X: ${acceleration.accelerationIncludingGravity.x}</p>
             //     <p>Acceleration Y: ${acceleration.accelerationIncludingGravity.y}</p>
@@ -68,6 +153,13 @@
             }
         });
 
+
+        window.onerror = function(msg, url, linenumber) {
+            accOut.innerHTML = `Error message: ${msg}\nURL: ${url}\nLine Number: ${linenumber}`;
+            return true;
+        } 
+
     </script>
 </body>
+
 </html>
